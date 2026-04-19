@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Checker Dashboard</title>
+</head>
+
+<body>
+
+<h2>Pending Requests</h2>
+<div id="pending-list"></div>
+
+<hr>
+
+<h2>Processed Requests</h2>
+<div id="processed-list"></div>
+
+
+<script>
+
+console.log("✅ CHECKER LOADED");
+
+// -------------------------
+// LOAD PENDING
+// -------------------------
+async function loadPending() {
+    try {
+        const res = await fetch("http://127.0.0.1:8000/pending");
+        const data = await res.json();
+
+        console.log("🔥 Pending Data:", data);
+        alert("Pending: " + JSON.stringify(data));
+
+        const container = document.getElementById("pending-list");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No pending requests</p>";
+            return;
+        }
+
+        data.forEach(req => {
+            const div = document.createElement("div");
+            div.style.border = "2px solid black";
+            div.style.padding = "10px";
+            div.style.margin = "10px";
+
+            div.innerHTML = `
+                <b>ID:</b> ${req.id}<br>
+                <b>Customer:</b> ${req.customer_id}<br>
+                <b>Old:</b> ${req.old_name}<br>
+                <b>New:</b> ${req.new_name}<br>
+                <b>Confidence:</b> ${req.confidence}<br>
+                <b>Status:</b> Needs Human Review<br>
+                <b>Summary:</b> ${req.summary}<br>
+                <b>Forgery:</b> ${req.forgery}<br>
+
+                <button onclick="approve(${req.id})">Approve</button>
+                <button onclick="reject(${req.id})">Reject</button>
+            `;
+
+            container.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error("❌ Pending Error:", err);
+        alert("Error loading pending");
+    }
+}
+
+
+// -------------------------
+// LOAD PROCESSED
+// -------------------------
+async function loadProcessed() {
+    try {
+        const res = await fetch("http://127.0.0.1:8000/processed");
+        const data = await res.json();
+
+        console.log("🔥 Processed Data:", data);
+        alert("Processed: " + JSON.stringify(data));
+
+        const container = document.getElementById("processed-list");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            container.innerHTML = "<p>No processed requests</p>";
+            return;
+        }
+
+        data.forEach(req => {
+            const div = document.createElement("div");
+            div.style.border = "2px solid green";
+            div.style.padding = "10px";
+            div.style.margin = "10px";
+
+            div.innerHTML = `
+                <b>ID:</b> ${req.id}<br>
+                <b>Customer:</b> ${req.customer_id}<br>
+                <b>Old:</b> ${req.old_name}<br>
+                <b>New:</b> ${req.new_name}<br>
+                <b>Confidence:</b> ${req.confidence}<br>
+                <b>Status:</b> ${req.status}<br>
+                <b>Summary:</b> ${req.summary}<br>
+                <b>Forgery:</b> ${req.forgery}<br>
+            `;
+
+            container.appendChild(div);
+        });
+
+    } catch (err) {
+        console.error("❌ Processed Error:", err);
+        alert("Error loading processed");
+    }
+}
+
+
+// -------------------------
+// APPROVE
+// -------------------------
+async function approve(id) {
+    await fetch(`http://127.0.0.1:8000/approve?id=${id}`, {
+        method: "POST"
+    });
+
+    alert("Approved ID: " + id);
+
+    loadPending();
+    loadProcessed();
+}
+
+
+// -------------------------
+// REJECT
+// -------------------------
+async function reject(id) {
+    await fetch(`http://127.0.0.1:8000/reject?id=${id}`, {
+        method: "POST"
+    });
+
+    alert("Rejected ID: " + id);
+
+    loadPending();
+    loadProcessed();
+}
+
+
+// -------------------------
+// AUTO LOAD ON PAGE OPEN
+// -------------------------
+window.onload = function () {
+    loadPending();
+    loadProcessed();
+};
+
+</script>
+
+</body>
+</html>

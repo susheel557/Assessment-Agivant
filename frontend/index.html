@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Name Change Verification</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #38bdf8;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .approve {
+            background: green;
+            color: white;
+        }
+
+        .reject {
+            background: red;
+            color: white;
+        }
+
+        .section {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🧠 AI Name Change Verification</h1>
+
+<div class="card">
+    <h2>Submit Request</h2>
+
+    <input id="customer_id" placeholder="Customer ID"><br>
+    <input id="old_name" placeholder="Old Name"><br>
+    <input id="new_name" placeholder="New Name"><br>
+    <input type="file" id="file"><br>
+
+    <button onclick="submitForm()">Submit</button>
+</div>
+
+<div class="section">
+    <h2>🟡 Pending Requests</h2>
+    <button onclick="loadPending()">Load Pending</button>
+    <div id="pending-list"></div>
+</div>
+
+<div class="section">
+    <h2>🟢 Processed Requests</h2>
+    <button onclick="loadProcessed()">Load Processed</button>
+    <div id="processed-list"></div>
+</div>
+
+<script>
+const BASE_URL = "http://127.0.0.1:8000";
+
+async function submitForm() {
+    const formData = new FormData();
+
+    formData.append("customer_id", document.getElementById("customer_id").value);
+    formData.append("old_name", document.getElementById("old_name").value);
+    formData.append("new_name", document.getElementById("new_name").value);
+    formData.append("file", document.getElementById("file").files[0]);
+
+    await fetch(`${BASE_URL}/submit`, {
+        method: "POST",
+        body: formData
+    });
+
+    alert("Submitted!");
+
+    // Refresh UI
+    loadPending();
+    loadProcessed();
+}
+
+async function loadPending() {
+    const res = await fetch(`${BASE_URL}/pending`, { cache: "no-store" });
+    const data = await res.json();
+
+    const container = document.getElementById("pending-list");
+    container.innerHTML = "";
+
+    if (data.length === 0) {
+        container.innerHTML = "<p>No pending requests</p>";
+        return;
+    }
+
+    data.forEach(req => {
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+            <b>ID:</b> ${req.id}<br>
+            <b>Customer:</b> ${req.customer_id}<br>
+            <b>Old:</b> ${req.old_name}<br>
+            <b>New:</b> ${req.new_name}<br>
+            <b>Confidence:</b> ${req.confidence}<br>
+            <b>Forgery:</b> ${req.forgery}<br>
+            <b>Summary:</b> ${req.summary}<br><br>
+
+            <button class="approve" onclick="approve(${req.id})">Approve</button>
+            <button class="reject" onclick="reject(${req.id})">Reject</button>
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+async function loadProcessed() {
+    const res = await fetch(`${BASE_URL}/processed`, { cache: "no-store" });
+    const data = await res.json();
+
+    const container = document.getElementById("processed-list");
+    container.innerHTML = "";
+
+    if (data.length === 0) {
+        container.innerHTML = "<p>No processed requests</p>";
+        return;
+    }
+
+    data.forEach(req => {
+        const div = document.createElement("div");
+        div.className = "card";
+
+        div.innerHTML = `
+            <b>ID:</b> ${req.id}<br>
+            <b>Customer:</b> ${req.customer_id}<br>
+            <b>Old:</b> ${req.old_name}<br>
+            <b>New:</b> ${req.new_name}<br>
+            <b>Confidence:</b> ${req.confidence}<br>
+            <b>Status:</b> ${req.status}<br>
+            <b>Forgery:</b> ${req.forgery}<br>
+            <b>Summary:</b> ${req.summary}
+        `;
+
+        container.appendChild(div);
+    });
+}
+
+async function approve(id) {
+    await fetch(`${BASE_URL}/approve?id=${id}`, {
+        method: "POST"
+    });
+
+    loadPending();
+    loadProcessed();
+}
+
+async function reject(id) {
+    await fetch(`${BASE_URL}/reject?id=${id}`, {
+        method: "POST"
+    });
+
+    loadPending();
+    loadProcessed();
+}
+
+// Auto load on start
+window.onload = () => {
+    loadPending();
+    loadProcessed();
+};
+</script>
+
+</body>
+</html>
